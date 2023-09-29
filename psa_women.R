@@ -3,7 +3,7 @@
 
 n_psa <- 1000
 
-### CCONTROL ARM 
+### CONTROL ARM 
 
 # set parameters
 
@@ -18,11 +18,11 @@ params_con <- data.frame(
   
   #costs
   
-  c_aecopd =  84.98, # AECOPD non hospitalised
-  c_hosp = 1929.98,  # AECOPD hospitalised
-  c_mod = 721.88 ,   # moderate disease state
-  c_sev = 1869.06,  # severe disease state
-  c_vsev = 3730.86, # very severe disease state
+  c_aecopd =  85.02, # AECOPD non hospitalised
+  c_hosp = 1930.02, # AECOPD hospitalised
+  c_mod = 209.35 , # moderate disease state
+  c_sev = 1203.55, # severe disease state
+  c_vsev = 2971.86, # very severe disease state
   c_intervention = 0, #  intervention (none in comparator arm)
   
   #SGRQ score 
@@ -80,12 +80,12 @@ params_int <- data.frame(
   
   #costs
   
-  c_aecopd =  84.98, # AECOPD non hospitalised
-  c_hosp = 1929.98,  # AECOPD hospitalised
-  c_mod = 721.88 ,   # moderate disease state
-  c_sev = 1869.06,  # severe disease state
-  c_vsev = 3730.86, # very severe disease state
-  c_intervention = 0, #  intervention (none in comparator arm)
+  c_aecopd =  85.02, # AECOPD non hospitalised
+  c_hosp = 1930.02, # AECOPD hospitalised
+  c_mod = 209.35 , # moderate disease state
+  c_sev = 1203.55, # severe disease state
+  c_vsev = 2971.86, # very severe disease state
+  c_intervention = 8061, #  intervention (none in comparator arm)
   
   #SGRQ score 
   

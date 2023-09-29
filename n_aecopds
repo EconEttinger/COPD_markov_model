@@ -1,0 +1,119 @@
+# ACUTE EXACERBATIONS AND HOSPITALISATIONS
+
+
+# The Markov Model Function
+markov_model_N_AECOPD <- function(.params) { with(.params, {
+  
+  #library 
+  library(dplyr)
+  
+  # create the transition matrix
+  
+  v_state_names <- c("Moderate", "Severe", "Very Severe", "Death") # names of the disease states
+  
+  m_P <- matrix(c(0, p_m2s, 0.00, if (sex == 0) {p_m2d_m} else if (sex == 1) {p_m2d_f} else {0}, # from moderate
+                  0.00, 0, p_s2vs, if (sex == 0) {p_s2d_m} else if (sex == 1) {p_s2d_f} else {0}, # from severe
+                  0.00,0.00,0, if (sex == 0) {p_vs2d_m} else if (sex == 1) {p_vs2d_f} else {0}, # from very severe 
+                  0.00, 0.00, 0.00, 1.00), # from death
+                nrow = 4, ncol = 4, byrow = TRUE,
+                dimnames = list(from = v_state_names,
+                                to = v_state_names))
+  
+  
+  # calculates probabilities of remaining in disease state
+  m_P[1,1] <- 1 - (as.numeric(m_P[1,2]) + as.numeric(m_P[1,4]))
+  m_P[2,2] <- 1 - (as.numeric(m_P[2,3]) + as.numeric(m_P[2,4]))
+  m_P[3,3] <- 1 - as.numeric(m_P[3,4])
+  
+  # create array for state membership 
+  
+  state_membership <- matrix(NA_real_,
+                             nrow = n_t, ncol =  n_s,
+                             dimnames = list(cycle = 1:n_t,
+                                             state = v_state_names))
+  
+  # populate state membership in first cycle of the model
+  
+  state_membership[1, ] <- c(n_c, 0, 0, 0)
+  
+  # run model for the selected number of cycles using matrix multiplication
+  
+  for (i in 2:n_t) {
+    state_membership[i, ] <- state_membership[i - 1, ] %*% m_P
+  }
+  
+  # check statemembership:
+  # matplot(1:n_t, state_membership, type = "l")
+  
+  ## calculate utility from SGRQ 
+  
+  
+  utility <- data.frame(
+    severity = c("moderate", "severe", "very severe"),
+    sgrq = c(q_mod, q_sev, q_vsev)
+  )
+  
+  
+  utility <- utility %>%
+    mutate(eq5d = 0.9617 - 0.0013*sgrq-0.0001*(sgrq+int_sgrq)^2+0.0231*1)
+  
+  
+  # create matrix for pay offs (costs of state membership and QALYs) in states 
+  
+  payoffs <- matrix(c(c_mod, c_sev, c_vsev, 0, # costs of state membership
+                      utility[1,3], utility[2,3], utility[3,3] , 0), # QALYs
+                    nrow = 4, ncol = 2, byrow = FALSE, # run by column 
+                    dimnames = list(state = v_state_names,
+                                    payoff = c("Cost", "QALY")))
+  
+  #here payoff trace now counts how many hospital admissions and aecopds per cycle
+  
+  payoff_trace <- array(NA_real_, 
+                        dim = c(n_t, 2), 
+                        dimnames = list(cycle = 1:n_t, 
+                                        payoff = c("Hospitalisations", "AECOPD")))
+  
+  # calculate hospitalisations  and aecopd put into payoff array
+  
+  payoff_trace[,1] <- 
+    state_membership[,1] * hosp_mod + # hospital admission for moderate , 
+    
+    state_membership[,2] * hosp_sev  + # hospital admission costs for severe
+    
+    state_membership[,3] * hosp_vsev # hospital admission costsfor very severe
+  
+  
+
+  payoff_trace[,2] <- 
+    state_membership[,1] * aecopd_mod  + # AECOPD costs for moderate
+
+    state_membership[,2] * aecopd_sev + # aecopd costs for severe
+
+    state_membership[,3] * aecopd_vsev  # aecopd cots for very severe
+  
+  #caculate non discounted costs and QALYS 
+  #colSums(payoff_trace)
+  #sum(payoff_trace[,1]) / sum(payoff_trace[,2])
+  
+  # calculate total discounted costs and QALYs
+  
+  return(payoff_trace)
+  
+}
+)
+}
+
+colSums()
+
+
+# calculate n of AECOPDs per person
+
+con <- colSums(markov_model_N_AECOPD(params_con))/1000
+int <- colSums(markov_model_N_AECOPD(params_int))/1000
+
+#attach costs 
+c_aecopd <-  85.02 # cost of non hospitalised AECOPD
+c_hosp <- 1930.02  # cost of hospitalised AECOPD
+
+con[1]*c_hosp + con[2] *c_aecopd
+int[1] * c_hosp + int[2] * c_aecopd
